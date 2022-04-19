@@ -10,7 +10,7 @@ fn main() {
         .insert_resource(Msaa {samples: 4})
         .insert_resource(WindowDescriptor{
             title: "bevy-runner".to_string(),
-            width: 400.0,
+            width: 1000.0,
             height: 600.0,
             ..Default::default()
         })
@@ -28,7 +28,7 @@ fn main() {
         // system once
         .add_startup_system(setup)
         // system frame
-        .add_system(move_car)
+        //.add_system(move)
         .run();
 }
 
@@ -68,32 +68,6 @@ fn setup(
                 .with_children(|parent| {
                     parent.spawn_scene(asset_server.load("models/road_straight.glb#Scene0"));
                 });
-            if i == 0 {
-                commands.spawn_bundle((
-                    Transform {
-                        translation: Vec3::new(i as f32-0.45, 0.0, j as f32),
-                        rotation: Quat::from_rotation_y(FRAC_PI_2),
-                        ..Default::default()
-                    },
-                    GlobalTransform::identity(),
-                ))
-                    .with_children(|parent| {
-                        parent.spawn_scene(asset_server.load("models/lamp.glb#Scene0"));
-                    });
-            }
-            if i == 2 {
-                commands.spawn_bundle((
-                    Transform {
-                        translation: Vec3::new(i as f32+0.45, 0.0, j as f32),
-                        rotation: Quat::from_rotation_y(-FRAC_PI_2),
-                        ..Default::default()
-                    },
-                    GlobalTransform::identity(),
-                ))
-                    .with_children(|parent| {
-                        parent.spawn_scene(asset_server.load("models/lamp.glb#Scene0"));
-                    });
-            }
         }
     }
 
@@ -110,26 +84,4 @@ fn setup(
             parent.spawn_scene(asset_server.load("models/taxi.glb#Scene0"));
         })
         .insert(Player);
-}
-
-fn move_car(
-    keyboard_input: Res<Input<KeyCode>>,
-    mut position: Query<&mut Transform,With<Player>>
-){
-    for mut transform in position.iter_mut() {
-        if keyboard_input.just_pressed(KeyCode::Left){
-            let mut x = transform.translation.x-1.0;
-            if x < 0.0 { x=0.0};
-            transform.translation = Vec3::new(x,
-                                         transform.translation.y,
-                                         transform.translation.z);
-        }
-        if keyboard_input.just_pressed(KeyCode::Right){
-            let mut x = transform.translation.x+1.0;
-            if x > 2.0 { x = 2.0};
-            transform.translation = Vec3::new(x,
-                                         transform.translation.y,
-                                         transform.translation.z);
-        }
-    }
 }
