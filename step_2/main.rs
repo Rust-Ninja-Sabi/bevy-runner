@@ -32,7 +32,6 @@ fn main() {
         .add_startup_system(setup)
         // system frame
         .add_system(move_car)
-        .add_system(move_street)
         .run();
 }
 
@@ -146,20 +145,6 @@ fn move_car(
             transform.translation = Vec3::new(x,
                                          transform.translation.y,
                                          transform.translation.z);
-        }
-    }
-}
-
-const STREET_SPEED:f32 = 1.5;
-
-fn move_street(
-    time:Res<Time>,
-    mut position: Query<&mut Transform,With<Street>>
-){
-    for mut transform in position.iter_mut() {
-        transform.translation = transform.translation + Vec3::new(0.0,0.0,1.0) * STREET_SPEED * time.delta_seconds();
-        if transform.translation.z > 2.0 {
-            transform.translation.z -= 11.0;
         }
     }
 }
