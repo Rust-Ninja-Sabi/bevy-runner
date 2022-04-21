@@ -108,3 +108,44 @@ fn move_street(
     }
 }
 ```
+
+## 4. Step _ manage coins
+
+<img src="img/step4.gif" width="256" align="left"><br><br><br><br><br><br><br><br>
+
+
+```Rust
+fn move_coin(
+    time:Res<Time>,
+    mut commands: Commands,
+    mut position: Query<(Entity, &mut Transform), With<Coin>>
+){
+    for (entity, mut transform) in position.iter_mut() {
+        transform.translation = transform.translation + Vec3::new(0.0,0.0,1.0) * STREET_SPEED * time.delta_seconds();
+        if transform.translation.z >= 1.0 {
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+```
+
+
+```Rust
+fn collision_coin(
+    mut commands: Commands,
+    mut score: ResMut<Score>,
+    position: Query<(Entity, &Transform), With<Coin>>,
+    player_position: Query<&Transform,With<Player>>
+){
+    let player_transfrom = player_position.single();
+    for (entity, transform) in position.iter() {
+        if transform.translation.x == player_transfrom.translation.x {
+            if (transform.translation.z - player_transfrom.translation.z).abs() < 0.4 {
+                commands.entity(entity).despawn_recursive();
+                score.value += 1;
+            }
+        }
+    }
+}
+
+```
