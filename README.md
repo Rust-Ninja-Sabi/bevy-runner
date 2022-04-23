@@ -149,3 +149,62 @@ fn collision_coin(
 }
 
 ```
+
+## 5. Step _ manage obstacles
+
+<img src="img/step5.gif" width="256" align="left"><br><br><br><br><br><br><br><br>
+
+
+```Rust
+ .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(4.0))
+                .with_system(spawn_obstacle)
+        )
+```
+
+
+```Rust
+fn spawn_obstacle(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
+){
+    let mut rng = rand::thread_rng();
+    let die = Uniform::from(0..3);
+    let ran_street = die.sample(&mut rng);
+
+    let model = OBSTACLE_MODELS[rng.gen_range(0..OBSTACLE_MODELS.len())];
+    commands.spawn_bundle((
+        Transform {
+            translation: Vec3::new(ran_street as f32,0.0,-10.0),
+            scale: Vec3::new(0.4, 0.4, 0.4),
+            rotation: Quat::from_rotation_y(PI)
+        },
+        GlobalTransform::identity(),
+    ))
+        .with_children(|parent| {
+            parent.spawn_scene(asset_server.load(model));
+        })
+        .insert(Obstacle);
+    println!("{}", model);
+}
+```
+
+
+```Rust
+const OBSTACLE_SPEED:f32 = 2.0;
+
+fn move_obstacle(
+    time:Res<Time>,
+    mut commands: Commands,
+    mut position: Query<(Entity, &mut Transform), With<Obstacle>>
+){
+    for (entity, mut transform) in position.iter_mut() {
+        transform.translation = transform.translation + Vec3::new(0.0,0.0,1.0) * OBSTACLE_SPEED * time.delta_seconds();
+        if transform.translation.z >= 1.0 {
+            commands.entity(entity).despawn_recursive();
+            println!("despawn");
+        }
+    }
+}
+```

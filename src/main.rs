@@ -2,9 +2,15 @@ use bevy::prelude::*;
 use rand::distributions::{Distribution, Uniform};
 use rand::Rng;
 use std::f32::consts::{FRAC_PI_2,PI};
+use bevy::core::FixedTimestep;
 
+const OBSTACLE_MODELS: &'static [&'static str] = &["models/hatchbackSports.glb#Scene0", "models/police.glb#Scene0",
+                                                    "models/sedan.glb#Scene0","models/tractor.glb#Scene0"];
 #[derive(Component)]
 struct Player;
+
+#[derive(Component)]
+struct Obstacle;
 
 #[derive(Component)]
 struct Street;
@@ -59,6 +65,12 @@ fn main() {
         .add_system(move_car)
         .add_system(move_street)
         .add_system(move_coin)
+        .add_system(move_obstacle)
+        .add_system_set(
+            SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(4.0))
+                .with_system(spawn_obstacle)
+        )
         .add_system_to_stage(CoreStage::PostUpdate, collision_coin)
         .add_system_to_stage(CoreStage::Last, scoreboard)
         .run();
@@ -319,4 +331,44 @@ fn scoreboard(
 
     let mut best_text = best_query.single_mut();
     best_text.sections[0].value = format!("Best: {}", score.best);
+}
+
+fn spawn_obstacle(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
+){
+    let mut rng = rand::thread_rng();
+    let die = Uniform::from(0..3);
+    let ran_street = die.sample(&mut rng);
+
+    let model = OBSTACLE_MODELS[rng.gen_range(0..OBSTACLE_MODELS.len())];
+    commands.spawn_bundle((
+        Transform {
+            translation: Vec3::new(ran_street as f32,0.0,-10.0),
+            scale: Vec3::new(0.4, 0.4, 0.4),
+            rotation: Quat::from_rotation_y(PI)
+        },
+        GlobalTransform::identity(),
+    ))
+        .with_children(|parent| {
+            parent.spawn_scene(asset_server.load(model));
+        })
+        .insert(Obstacle);
+    //println!("{}", model);
+}
+
+const OBSTACLE_SPEED:f32 = 2.0;
+
+fn move_obstacle(
+    time:Res<Time>,
+    mut commands: Commands,
+    mut position: Query<(Entity, &mut Transform), With<Obstacle>>
+){
+    for (entity, mut transform) in position.iter_mut() {
+        transform.translation = transform.translation + Vec3::new(0.0,0.0,1.0) * OBSTACLE_SPEED * time.delta_seconds();
+        if transform.translation.z >= 1.0 {
+            commands.entity(entity).despawn_recursive();
+            //println!("despawn");
+        }
+    }
 }
