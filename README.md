@@ -208,3 +208,63 @@ fn move_obstacle(
     }
 }
 ```
+
+## 6. Step _ restart game
+
+<img src="img/step6.png" width="256" align="left"><br><br><br><br><br><br><br><br>
+
+
+```Rust
+#[derive(Clone, Eq, PartialEq, Debug, Hash)]
+enum GameState {
+    Playing,
+    GameOver,
+}
+```
+
+
+```Rust
+fn teardown(
+    mut commands: Commands,
+    entities: Query<Entity>
+) {
+    for entity in entities.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+```
+
+
+```Rust
+fn show_text(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
+) {
+    commands
+        .spawn_bundle(NodeBundle {
+            style: Style {
+                margin: Rect::all(Val::Auto),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                ..default()
+            },
+            color: Color::NONE.into(),
+            ..default()
+        })
+        .with_children(|parent| {
+            parent.spawn_bundle(TextBundle {
+                text: Text::with_section(
+                    "press key to restart",
+                    TextStyle {
+                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
+                        font_size: 40.0,
+                        color: Color::rgb(0.5, 0.5, 1.0),
+                    },
+                    Default::default(),
+                ),
+                ..default()
+            });
+        });
+}
+
+```

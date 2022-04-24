@@ -6,13 +6,6 @@ use bevy::core::FixedTimestep;
 
 const OBSTACLE_MODELS: &'static [&'static str] = &["models/hatchbackSports.glb#Scene0", "models/police.glb#Scene0",
                                                     "models/sedan.glb#Scene0","models/tractor.glb#Scene0"];
-
-#[derive(Clone, Eq, PartialEq, Debug, Hash)]
-enum GameState {
-    Playing,
-    GameOver,
-}
-
 #[derive(Component)]
 struct Player;
 
@@ -58,7 +51,6 @@ fn main() {
         //.insert_resource(Gamegrid::default())
         //bevy itself
         .add_plugins(DefaultPlugins)
-        .add_state(GameState::Playing)
         //.add_state(Gamestate::Play)
         //.add_plugin(ConfigCam)
         //resources
@@ -68,26 +60,19 @@ fn main() {
         // events:
         //.add_event::<LevelUpEvent>()
         // system once
-        .add_system_set(SystemSet::on_enter(GameState::Playing).with_system(setup))
+        .add_startup_system(setup)
         // system frame
+        .add_system(move_car)
+        .add_system(move_street)
+        .add_system(move_coin)
+        .add_system(move_obstacle)
         .add_system_set(
-            SystemSet::on_update(GameState::Playing)
-            .with_system(move_car)
-            .with_system(move_street)
-            .with_system(move_coin)
-            .with_system(move_obstacle)
-            .with_system(collision_coin)
-            .with_system(collision_obstacle)
-            .with_system(scoreboard)
-        )
-        .add_system_set(
-            SystemSet::on_update(GameState::Playing)
+            SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(4.0))
                 .with_system(spawn_obstacle)
         )
-        .add_system_set(SystemSet::on_enter(GameState::GameOver).with_system(show_text))
-        .add_system_set(SystemSet::on_update(GameState::GameOver).with_system(gameover_keyboard))
-        .add_system_set(SystemSet::on_exit(GameState::GameOver).with_system(teardown))
+        .add_system_to_stage(CoreStage::PostUpdate, collision_coin)
+        .add_system_to_stage(CoreStage::Last, scoreboard)
         .run();
 }
 
@@ -384,76 +369,6 @@ fn move_obstacle(
         if transform.translation.z >= 1.0 {
             commands.entity(entity).despawn_recursive();
             //println!("despawn");
-        }
-    }
-}
-
-fn teardown(
-    mut commands: Commands,
-    entities: Query<Entity>
-) {
-    for entity in entities.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-}
-fn show_text(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>
-) {
-    commands
-        .spawn_bundle(NodeBundle {
-            style: Style {
-                margin: Rect::all(Val::Auto),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            color: Color::NONE.into(),
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn_bundle(TextBundle {
-                text: Text::with_section(
-                    "press key to restart",
-                    TextStyle {
-                        font: asset_server.load("fonts/FiraSans-Bold.ttf"),
-                        font_size: 40.0,
-                        color: Color::rgb(0.5, 0.5, 1.0),
-                    },
-                    Default::default(),
-                ),
-                ..default()
-            });
-        });
-}
-
-fn gameover_keyboard(
-    mut state: ResMut<State<GameState>>,
-    keyboard_input: Res<Input<KeyCode>>
-) {
-    if keyboard_input.just_pressed(KeyCode::Space) {
-        state.set(GameState::Playing).unwrap();
-    }
-}
-
-fn collision_obstacle(
-    mut commands: Commands,
-    mut score: ResMut<Score>,
-    mut state: ResMut<State<GameState>>,
-    position: Query<(Entity, &Transform), With<Obstacle>>,
-    player_position: Query<&Transform,With<Player>>
-){
-    let player_transfrom = player_position.single();
-    for (entity, transform) in position.iter() {
-        if transform.translation.x == player_transfrom.translation.x {
-            if (transform.translation.z - player_transfrom.translation.z).abs() < 0.4 {
-                state.set(GameState::GameOver).unwrap();
-                if score.value > score.best {
-                    score.best = score.value;
-                    score.value = 0;
-                }
-                return;
-            }
         }
     }
 }
